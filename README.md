@@ -4,6 +4,16 @@ Frank Lyrics is an experimental Chrome Manifest V3 extension for YouTube lyric p
 
 The preferred flow is synced timestamp import from LRCLIB. If no match is available, you can add, remove, nudge, and repeat manual markers.
 
+## Screenshots
+
+Frank Lyrics sits unobtrusively on top of YouTube while keeping the lyric video visible:
+
+![Frank Lyrics panel on a YouTube lyric video](docs/images/frank-lyrics-youtube.png)
+
+The compact panel shows saved markers, repeat controls, speed buttons, nudge controls, a mini timeline, and the marker list:
+
+![Frank Lyrics compact marker controls](docs/images/frank-lyrics-panel.png)
+
 ## Install from Releases
 
 1. Download the latest `frank-lyrics-vX.Y.Z.zip` from GitHub Releases.
