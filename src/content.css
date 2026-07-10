@@ -1,0 +1,274 @@
+.yt-lyric-practice-panel {
+  position: fixed;
+  right: 16px;
+  bottom: 80px;
+  z-index: 2147483647;
+  width: 260px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 77, 77, 0.18), transparent 34%),
+    rgba(17, 17, 18, 0.92);
+  color: #fff;
+  font: 12px/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(8px);
+}
+
+.yt-lyric-practice-panel * {
+  box-sizing: border-box;
+}
+
+.yt-lyric-practice-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+  font-weight: 700;
+}
+
+.yt-lyric-practice-title > span:first-child {
+  flex: 1;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+.yt-lyric-practice-source {
+  flex: 0 0 auto;
+  max-width: 86px;
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: #ffd7d7;
+  background: rgba(255, 77, 77, 0.12);
+  font-size: 9px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.yt-lyric-practice-panel .yt-lyric-practice-title button {
+  flex: 0 0 24px;
+  padding: 2px 0;
+  border-radius: 999px;
+  color: #cfcfcf;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.yt-lyric-practice-status {
+  margin: 7px 0;
+  color: #d6d6d6;
+  font-size: 11px;
+}
+
+.yt-lyric-practice-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.yt-lyric-practice-primary {
+  display: flex;
+  margin-top: 8px;
+}
+
+.yt-lyric-practice-panel button {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  border-radius: 7px;
+  padding: 6px 7px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  transition: background 120ms ease, transform 120ms ease, opacity 120ms ease;
+}
+
+.yt-lyric-practice-panel button:hover,
+.yt-lyric-practice-panel button:focus {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.yt-lyric-practice-panel button:active {
+  transform: translateY(1px);
+}
+
+.yt-lyric-practice-panel button[aria-pressed="true"] {
+  background: #1f7a4d;
+}
+
+.yt-lyric-practice-panel .yt-lyric-practice-primary button {
+  padding: 8px 10px;
+  background: linear-gradient(135deg, #ff4d4d, #db2f2f);
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(255, 77, 77, 0.22);
+}
+
+.yt-lyric-practice-panel .yt-lyric-practice-primary button:hover,
+.yt-lyric-practice-panel .yt-lyric-practice-primary button:focus {
+  background: linear-gradient(135deg, #ff6262, #e33939);
+}
+
+.yt-lyric-practice-panel .yt-lyric-practice-primary button:disabled {
+  cursor: progress;
+  opacity: 0.75;
+}
+
+.yt-lyric-practice-panel .yt-lyric-practice-manual-toggle {
+  width: 100%;
+  margin-top: 6px;
+  background: rgba(255, 255, 255, 0.075);
+  color: #e1e1e1;
+}
+
+.yt-lyric-practice-manual {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.yt-lyric-practice-manual-note {
+  margin-bottom: 6px;
+  color: #aeb0b3;
+  font-size: 10px;
+}
+
+.yt-lyric-practice-help {
+  margin-top: 8px;
+  color: #aaa;
+  font-size: 10px;
+}
+
+.yt-lyric-practice-toast {
+  margin-top: 8px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: rgba(31, 122, 77, 0.96);
+  color: #fff;
+  font-size: 11px;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.yt-lyric-practice-toast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.yt-lyric-practice-marker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 9px;
+  color: #cfcfcf;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.yt-lyric-practice-marker-head b {
+  color: #fff;
+  font-weight: 800;
+}
+
+.yt-lyric-practice-panel .yt-lyric-practice-marker-head button {
+  flex: 0 0 auto;
+  padding: 3px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: none;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.yt-lyric-practice-timeline {
+  position: relative;
+  height: 18px;
+  margin: 6px 0 4px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.055));
+  overflow: hidden;
+}
+
+.yt-lyric-practice-tick {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  width: 7px;
+  min-width: 0;
+  padding: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  transform: translateX(-50%);
+}
+
+.yt-lyric-practice-tick:hover,
+.yt-lyric-practice-tick:focus,
+.yt-lyric-practice-tick.is-active {
+  background: #ff4d4d;
+  box-shadow: 0 0 0 2px rgba(255, 77, 77, 0.18);
+}
+
+.yt-lyric-practice-markers {
+  max-height: 116px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: auto;
+}
+
+.yt-lyric-practice-markers li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  border-radius: 7px;
+}
+
+.yt-lyric-practice-markers li.is-active {
+  background: rgba(255, 77, 77, 0.12);
+}
+
+.yt-lyric-practice-panel .yt-lyric-practice-marker-jump {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 5px 7px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.075);
+}
+
+.yt-lyric-practice-marker-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff4d4d;
+  opacity: 0.75;
+}
+
+.yt-lyric-practice-panel .yt-lyric-practice-marker-remove {
+  flex: 0 0 24px;
+  padding: 5px 0;
+  background: rgba(255, 255, 255, 0.075);
+  color: #cfcfcf;
+}
+
+.yt-lyric-practice-panel .yt-lyric-practice-marker-remove:hover,
+.yt-lyric-practice-panel .yt-lyric-practice-marker-remove:focus {
+  background: rgba(255, 77, 77, 0.35);
+  color: #fff;
+}
+
+.yt-lyric-practice-empty {
+  padding: 7px;
+  color: #aaa;
+  font-size: 11px;
+}

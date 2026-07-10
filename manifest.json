@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Lyric Practice Prototype",
+  "version": "0.1.0",
+  "description": "Small YouTube watch-page control panel for lyric practice with local markers.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://lrclib.net/*"],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://www.youtube.com/watch*"],
+      "js": ["src/content.js"],
+      "css": ["src/content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["data/sample-markers.json"],
+      "matches": ["*://www.youtube.com/*"]
+    }
+  ]
+}

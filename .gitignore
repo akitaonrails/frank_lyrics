@@ -1,0 +1,11 @@
+tmp/
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+node_modules/
+dist/
+build/
+.env
+.env.*
