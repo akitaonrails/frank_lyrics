@@ -325,7 +325,7 @@
   }
 
   function scrollActiveMarkerIntoView(markerList, activeIndex) {
-    if (!markerList || activeIndex < 0 || activeIndex === lastScrolledMarkerIndex) return;
+    if (!markerList || activeIndex < 0) return;
     if (markerList.offsetParent === null) return;
 
     const activeItem = markerList.querySelector(`[data-marker-index="${activeIndex}"]`);
@@ -335,6 +335,9 @@
     const itemBottom = itemTop + activeItem.offsetHeight;
     const visibleTop = markerList.scrollTop;
     const visibleBottom = visibleTop + markerList.clientHeight;
+    const isVisible = itemTop >= visibleTop && itemBottom <= visibleBottom;
+
+    if (activeIndex === lastScrolledMarkerIndex && isVisible) return;
 
     if (itemTop < visibleTop) {
       markerList.scrollTop = Math.max(0, itemTop - 4);
@@ -418,9 +421,10 @@
     if (manualSection) manualSection.hidden = !manualEditorVisible;
     if (manualToggle) manualToggle.hidden = manualEditorVisible;
     if (markerList) {
-      markerList.innerHTML = markers.length
+      const markerListKey = markers.join("|");
+      const nextMarkerListHtml = markers.length
         ? markers.map((marker, index) => `
-          <li class="${index === activeIndex ? "is-active" : ""}" data-marker-index="${index}" ${index === activeIndex ? "aria-current=\"true\"" : ""}>
+          <li data-marker-index="${index}">
             <button type="button" class="yt-lyric-practice-marker-jump" data-action="seek" data-index="${index}" title="Seek to ${formatTime(marker)}" aria-label="Seek to marker at ${formatTime(marker)}">
               <span class="yt-lyric-practice-marker-dot"></span>
               <span>${formatTime(marker)}</span>
@@ -429,6 +433,16 @@
           </li>
         `).join("")
         : `<li class="yt-lyric-practice-empty">No markers yet. Press Alt+M or + Marker.</li>`;
+      if (markerList.dataset.markerListKey !== markerListKey) {
+        markerList.innerHTML = nextMarkerListHtml;
+        markerList.dataset.markerListKey = markerListKey;
+      }
+      markerList.querySelectorAll("[data-marker-index]").forEach((item) => {
+        const isActive = Number(item.dataset.markerIndex) === activeIndex;
+        item.classList.toggle("is-active", isActive);
+        if (isActive) item.setAttribute("aria-current", "true");
+        else item.removeAttribute("aria-current");
+      });
       window.requestAnimationFrame(() => scrollActiveMarkerIntoView(markerList, activeIndex));
     }
     if (timeline) {
