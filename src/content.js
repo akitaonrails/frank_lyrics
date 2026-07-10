@@ -16,10 +16,6 @@
   let manualEditorVisible = false;
   let lastScrolledMarkerIndex = -2;
 
-  const ARTIST_ALIASES = {
-    "緑黄色社会": "Ryokuoushoku Shakai"
-  };
-
   function getVideoId() {
     return new URLSearchParams(window.location.search).get("v");
   }
@@ -94,99 +90,16 @@
     if (message) showToast(message);
   }
 
-  function cleanTitlePart(value) {
-    return String(value || "")
-      .replace(/\[[^\]]*\]/g, " ")
-      .replace(/【[^】]*】/g, " ")
-      .replace(/\([^)]*(?:lyrics?|official|mv|music video|hd|full|op|opening)[^)]*\)/gi, " ")
-      .replace(/\b(?:lyrics?|lyric video|official|music video|mv|hd|full|opening|ending|theme|song|op|ed)\b/gi, " ")
-      .replace(/[「」『』]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-
-  function isNoiseTitleTag(value) {
-    return /^(?:hd|4k|mv|pv|official|lyrics?|lyric video|full|audio|music video|op|ed|opening|ending)$/i
-      .test(cleanTitlePart(value));
-  }
-
-  function parseYouTubeTitle(rawTitle) {
-    let title = String(rawTitle || "")
-      .replace(/\s+-\s+YouTube$/i, "")
-      .replace(/\s*｜\s*/g, " | ")
-      .trim();
-
-    const bracketArtistMatch = title.match(/^[【\[]([^】\]]+)[】\]]\s*(.+)$/u);
-    if (bracketArtistMatch && !isNoiseTitleTag(bracketArtistMatch[1])) {
-      const artist = cleanTitlePart(bracketArtistMatch[1]);
-      const track = cleanTitlePart(bracketArtistMatch[2]);
-      if (track && artist) {
-        return {
-          track,
-          artist: ARTIST_ALIASES[artist] || artist,
-          originalArtist: artist
-        };
-      }
-    }
-
-    const byQuotedMatch = title.match(/["“”「『]([^"“”」』]+)["“”」』]\s+by\s+([^()|]+)/i);
-    if (byQuotedMatch) {
-      const artist = cleanTitlePart(byQuotedMatch[2]);
-      return {
-        track: cleanTitlePart(byQuotedMatch[1]),
-        artist: ARTIST_ALIASES[artist] || artist,
-        originalArtist: artist
-      };
-    }
-
-    const byPlainMatch = title.match(/\bby\s+([^()|]+)/i);
-    if (byPlainMatch) {
-      const beforeBy = title.slice(0, byPlainMatch.index).split(/\s+-\s+/).pop();
-      const artist = cleanTitlePart(byPlainMatch[1]);
-      const track = cleanTitlePart(beforeBy);
-      if (track && artist) {
-        return {
-          track,
-          artist: ARTIST_ALIASES[artist] || artist,
-          originalArtist: artist
-        };
-      }
-    }
-
-    let artist = "";
-    if (title.includes("|")) {
-      const parts = title.split("|").map((part) => part.trim()).filter(Boolean);
-      title = parts[0] || title;
-      artist = parts[parts.length - 1] || "";
-    }
-
-    let track = title;
-    if (!artist && /\s+-\s+/.test(title)) {
-      const parts = title.split(/\s+-\s+/).map((part) => part.trim()).filter(Boolean);
-      if (parts.length >= 2) {
-        artist = parts[0];
-        track = parts.slice(1).join(" - ");
-      }
-    } else if (/\s+-\s+/.test(title)) {
-      track = title.split(/\s+-\s+/)[0];
-    }
-
-    track = cleanTitlePart(track)
-      .replace(/\s+[\u3040-\u30ff\u3400-\u9fff].*$/u, "")
-      .trim();
-    artist = cleanTitlePart(artist);
-
-    return {
-      track,
-      artist: ARTIST_ALIASES[artist] || artist,
-      originalArtist: artist
-    };
-  }
-
   function getYouTubeTitle() {
     return document.querySelector("h1.ytd-watch-metadata yt-formatted-string")?.textContent?.trim()
       || document.querySelector("h1.title yt-formatted-string")?.textContent?.trim()
       || document.title;
+  }
+
+  function getYouTubeDescription() {
+    return document.querySelector('meta[name="description"]')?.content?.trim()
+      || document.querySelector('meta[property="og:description"]')?.content?.trim()
+      || "";
   }
 
   async function findSyncedMarkers() {
@@ -197,11 +110,13 @@
       return;
     }
 
-    const parsed = parseYouTubeTitle(getYouTubeTitle());
-    if (!parsed.track || !parsed.artist) {
+    const rawTitle = getYouTubeTitle();
+    const rawDescription = getYouTubeDescription();
+    const parsed = FrankLyricsMetadata.parseVideoMetadata(rawTitle, rawDescription);
+    if (!parsed.track) {
       manualEditorVisible = true;
       updatePanel();
-      showToast("Could not parse track/artist from title");
+      showToast("Could not parse track from title/description");
       return;
     }
 
@@ -215,7 +130,8 @@
         videoId,
         track: parsed.track,
         artist: parsed.artist,
-        duration: Number.isFinite(video.duration) ? video.duration : null
+        duration: Number.isFinite(video.duration) ? video.duration : null,
+        context: `${rawTitle}\n${rawDescription}`
       });
 
       if (!response?.ok || !Array.isArray(response.markers) || response.markers.length === 0) {

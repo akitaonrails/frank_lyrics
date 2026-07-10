@@ -65,6 +65,21 @@ LRCLIB synced lyric text is used only to parse timestamps. The background worker
 
 ## Packaging
 
+Run parser unit tests with Node built-ins only:
+
+```sh
+node tests/parser.test.js
+```
+
+Validate extension JavaScript syntax without a package manager:
+
+```sh
+node --check src/content.js
+node --check src/background.js
+node --check src/metadata.js
+node --check tests/parser.test.js
+```
+
 Create a release zip locally:
 
 ```sh

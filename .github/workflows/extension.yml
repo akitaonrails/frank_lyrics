@@ -39,6 +39,11 @@ jobs:
         run: |
           node --check src/content.js
           node --check src/background.js
+          node --check src/metadata.js
+          node --check tests/parser.test.js
+
+      - name: Run unit tests
+        run: node tests/parser.test.js
 
       - name: Validate JSON
         run: |

@@ -54,8 +54,16 @@ function rankCandidate(candidate, request) {
   if (markers.length < 2) return null;
 
   const trackScore = textMatchScore(request.track, candidate.trackName || candidate.name);
+  if (trackScore < 0.35) return null;
+
+  const hasArtist = Boolean(normalizeText(request.artist));
   const artistScore = textMatchScore(request.artist, candidate.artistName);
-  if (trackScore < 0.35 || artistScore < 0.25) return null;
+  if (hasArtist && artistScore < 0.25) return null;
+
+  const contextScore = textMatchScore(
+    request.context,
+    `${candidate.trackName || candidate.name || ""} ${candidate.artistName || ""} ${candidate.albumName || ""}`
+  );
 
   const candidateDuration = Number(candidate.duration);
   const requestDuration = Number(request.duration);
@@ -63,26 +71,45 @@ function rankCandidate(candidate, request) {
     ? Math.abs(candidateDuration - requestDuration)
     : 999;
   const durationScore = Math.max(0, 1 - durationDiff / 30);
-  const score = trackScore * 4 + artistScore * 3 + durationScore * 2 - durationDiff / 120;
+  const score = trackScore * 4
+    + (hasArtist ? artistScore * 3 : 0)
+    + contextScore * 2
+    + durationScore * 2
+    - durationDiff / 120;
 
-  return { candidate, markers, score, durationDiff, trackScore, artistScore };
+  return { candidate, markers, score, durationDiff, trackScore, artistScore, contextScore };
 }
 
 async function findSyncedMarkers(request) {
-  const params = new URLSearchParams({
-    track_name: request.track || "",
-    artist_name: request.artist || ""
-  });
-  const response = await fetch(`${LRCLIB_SEARCH_URL}?${params.toString()}`, {
-    headers: { "Accept": "application/json" }
-  });
-
-  if (!response.ok) {
-    throw new Error(`LRCLIB search failed (${response.status})`);
+  if (!request.track) {
+    return { ok: false, message: "Could not parse song title" };
   }
 
-  const results = await response.json();
-  const ranked = (Array.isArray(results) ? results : [])
+  const searches = [];
+  if (request.artist) {
+    searches.push(new URLSearchParams({ track_name: request.track, artist_name: request.artist }));
+    searches.push(new URLSearchParams({ q: `${request.track} ${request.artist}` }));
+  }
+  searches.push(new URLSearchParams({ q: `${request.track} ${request.context || ""}`.slice(0, 220) }));
+  searches.push(new URLSearchParams({ track_name: request.track }));
+
+  const resultsById = new Map();
+  for (const params of searches) {
+    const response = await fetch(`${LRCLIB_SEARCH_URL}?${params.toString()}`, {
+    headers: { "Accept": "application/json" }
+    });
+
+    if (!response.ok) {
+      throw new Error(`LRCLIB search failed (${response.status})`);
+    }
+
+    const results = await response.json();
+    for (const result of Array.isArray(results) ? results : []) {
+      resultsById.set(result.id ?? `${result.trackName}-${result.artistName}-${result.duration}`, result);
+    }
+  }
+
+  const ranked = Array.from(resultsById.values())
     .map((candidate) => rankCandidate(candidate, request))
     .filter(Boolean)
     .sort((a, b) => b.score - a.score);
