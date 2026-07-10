@@ -14,6 +14,7 @@
   let findSyncedBusy = false;
   let hasStoredMarkers = false;
   let manualEditorVisible = false;
+  let lastScrolledMarkerIndex = -2;
 
   const ARTIST_ALIASES = {
     "緑黄色社会": "Ryokuoushoku Shakai"
@@ -81,12 +82,14 @@
     markers = sampleMarkers;
     await saveMarkers();
     manualEditorVisible = true;
+    lastScrolledMarkerIndex = -2;
     updatePanel();
     showToast(`Loaded ${markers.length} sample markers`);
   }
 
   function revealManualEditor(message) {
     manualEditorVisible = true;
+    lastScrolledMarkerIndex = -2;
     updatePanel();
     if (message) showToast(message);
   }
@@ -102,11 +105,29 @@
       .trim();
   }
 
+  function isNoiseTitleTag(value) {
+    return /^(?:hd|4k|mv|pv|official|lyrics?|lyric video|full|audio|music video|op|ed|opening|ending)$/i
+      .test(cleanTitlePart(value));
+  }
+
   function parseYouTubeTitle(rawTitle) {
     let title = String(rawTitle || "")
       .replace(/\s+-\s+YouTube$/i, "")
       .replace(/\s*｜\s*/g, " | ")
       .trim();
+
+    const bracketArtistMatch = title.match(/^[【\[]([^】\]]+)[】\]]\s*(.+)$/u);
+    if (bracketArtistMatch && !isNoiseTitleTag(bracketArtistMatch[1])) {
+      const artist = cleanTitlePart(bracketArtistMatch[1]);
+      const track = cleanTitlePart(bracketArtistMatch[2]);
+      if (track && artist) {
+        return {
+          track,
+          artist: ARTIST_ALIASES[artist] || artist,
+          originalArtist: artist
+        };
+      }
+    }
 
     const byQuotedMatch = title.match(/["“”「『]([^"“”」』]+)["“”」』]\s+by\s+([^()|]+)/i);
     if (byQuotedMatch) {
@@ -207,6 +228,7 @@
       markers = normalizeMarkers(response.markers);
       await saveMarkers();
       manualEditorVisible = true;
+      lastScrolledMarkerIndex = -2;
       updatePanel();
       const source = response.source?.artistName ? ` from LRCLIB (${response.source.artistName})` : " from LRCLIB";
       showToast(`Loaded ${markers.length} synced markers${source}`);
@@ -260,6 +282,7 @@
     if (!Number.isFinite(markers[index])) return;
     markers = markers.filter((_, markerIndex) => markerIndex !== index);
     await saveMarkers();
+    lastScrolledMarkerIndex = -2;
     updatePanel();
   }
 
@@ -270,6 +293,7 @@
     }
     markers = normalizeMarkers(markers.map((marker) => marker + delta));
     await saveMarkers();
+    lastScrolledMarkerIndex = -2;
     updatePanel();
     showToast(`Markers nudged ${delta > 0 ? "+" : ""}${delta.toFixed(2)}s`);
   }
@@ -295,8 +319,30 @@
     const markerTime = Math.round(video.currentTime * 100) / 100;
     markers = normalizeMarkers([...markers, video.currentTime]);
     await saveMarkers();
+    lastScrolledMarkerIndex = -2;
     updatePanel();
     showToast(`Marker added at ${formatTime(markerTime)}`);
+  }
+
+  function scrollActiveMarkerIntoView(markerList, activeIndex) {
+    if (!markerList || activeIndex < 0 || activeIndex === lastScrolledMarkerIndex) return;
+    if (markerList.offsetParent === null) return;
+
+    const activeItem = markerList.querySelector(`[data-marker-index="${activeIndex}"]`);
+    if (!activeItem) return;
+
+    const itemTop = activeItem.offsetTop;
+    const itemBottom = itemTop + activeItem.offsetHeight;
+    const visibleTop = markerList.scrollTop;
+    const visibleBottom = visibleTop + markerList.clientHeight;
+
+    if (itemTop < visibleTop) {
+      markerList.scrollTop = Math.max(0, itemTop - 4);
+    } else if (itemBottom > visibleBottom) {
+      markerList.scrollTop = itemBottom - markerList.clientHeight + 4;
+    }
+
+    lastScrolledMarkerIndex = activeIndex;
   }
 
   function setPlaybackRate(rate) {
@@ -374,15 +420,16 @@
     if (markerList) {
       markerList.innerHTML = markers.length
         ? markers.map((marker, index) => `
-          <li class="${index === activeIndex ? "is-active" : ""}">
-            <button type="button" class="yt-lyric-practice-marker-jump" data-action="seek" data-index="${index}" title="Seek to ${formatTime(marker)}">
+          <li class="${index === activeIndex ? "is-active" : ""}" data-marker-index="${index}" ${index === activeIndex ? "aria-current=\"true\"" : ""}>
+            <button type="button" class="yt-lyric-practice-marker-jump" data-action="seek" data-index="${index}" title="Seek to ${formatTime(marker)}" aria-label="Seek to marker at ${formatTime(marker)}">
               <span class="yt-lyric-practice-marker-dot"></span>
               <span>${formatTime(marker)}</span>
             </button>
-            <button type="button" class="yt-lyric-practice-marker-remove" data-action="remove" data-index="${index}" title="Remove marker at ${formatTime(marker)}">×</button>
+            <button type="button" class="yt-lyric-practice-marker-remove" data-action="remove" data-index="${index}" title="Remove marker at ${formatTime(marker)}" aria-label="Remove marker at ${formatTime(marker)}">×</button>
           </li>
         `).join("")
         : `<li class="yt-lyric-practice-empty">No markers yet. Press Alt+M or + Marker.</li>`;
+      window.requestAnimationFrame(() => scrollActiveMarkerIntoView(markerList, activeIndex));
     }
     if (timeline) {
       timeline.innerHTML = markers.length && duration
@@ -498,6 +545,7 @@
     markers = loaded.markers;
     hasStoredMarkers = loaded.fromStorage;
     manualEditorVisible = hasStoredMarkers;
+    lastScrolledMarkerIndex = -2;
     buildPanel();
     updateRepeatLoop();
     if (hasStoredMarkers) showToast(`Loaded ${markers.length} local markers`);

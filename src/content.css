@@ -273,6 +273,7 @@
   padding: 0;
   list-style: none;
   overflow: auto;
+  scroll-behavior: smooth;
 }
 
 .yt-lyric-practice-markers li {
@@ -281,10 +282,13 @@
   gap: 5px;
   margin-top: 4px;
   border-radius: 7px;
+  border: 1px solid transparent;
 }
 
 .yt-lyric-practice-markers li.is-active {
-  background: rgba(255, 77, 77, 0.12);
+  border-color: rgba(255, 77, 77, 0.55);
+  background: linear-gradient(90deg, rgba(255, 77, 77, 0.28), rgba(255, 77, 77, 0.1));
+  box-shadow: inset 3px 0 0 #ff4d4d, 0 0 0 1px rgba(255, 77, 77, 0.08);
 }
 
 .yt-lyric-practice-panel .yt-lyric-practice-marker-jump {
@@ -295,6 +299,11 @@
   padding: 5px 7px;
   text-align: left;
   background: rgba(255, 255, 255, 0.075);
+}
+
+.yt-lyric-practice-markers li.is-active .yt-lyric-practice-marker-jump {
+  background: rgba(255, 255, 255, 0.12);
+  font-weight: 800;
 }
 
 .yt-lyric-practice-marker-dot {
@@ -310,6 +319,15 @@
   padding: 5px 0;
   background: rgba(255, 255, 255, 0.075);
   color: #cfcfcf;
+}
+
+.yt-lyric-practice-markers li.is-active .yt-lyric-practice-marker-remove {
+  flex-basis: 30px;
+  min-height: 28px;
+  background: rgba(255, 77, 77, 0.24);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
 }
 
 .yt-lyric-practice-panel .yt-lyric-practice-marker-remove:hover,

@@ -44,7 +44,7 @@ No package manager or build step is required.
 - **Alt+ArrowLeft / Alt+ArrowRight**: jump to previous or next marker.
 - **↻** or **Alt+R**: toggle repeat for the current segment.
 - **Speed buttons**: choose `1x`, `0.9x`, `0.8x`, or `0.75x` practice speed.
-- **Marker list / mini timeline**: click marker times or ticks to seek; click **×** to remove a marker.
+- **Marker list / mini timeline**: click marker times or ticks to seek; the current marker is highlighted and auto-scrolled into view so you can remove it with **×**.
 - **Load sample**: secondary development fallback for packaged sample markers, currently documented in `data/sample-markers.json`.
 
 All marker changes are saved to Chrome extension local storage for the specific YouTube video ID. The extension does not use `window.localStorage` on youtube.com.
