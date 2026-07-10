@@ -153,6 +153,10 @@
 }
 
 .yt-lyric-practice-panel .yt-lyric-practice-primary button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 8px 10px;
   background: linear-gradient(135deg, #ff4d4d, #db2f2f);
   font-weight: 700;
@@ -167,6 +171,38 @@
 .yt-lyric-practice-panel .yt-lyric-practice-primary button:disabled {
   cursor: progress;
   opacity: 0.75;
+}
+
+.yt-lyric-practice-panel .yt-lyric-practice-primary button.is-searching {
+  background: linear-gradient(135deg, #ff6262, #c92a2a, #ff6262);
+  background-size: 220% 100%;
+  animation: yt-lyric-practice-search-pulse 1.15s linear infinite;
+}
+
+.yt-lyric-practice-spinner {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.34);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: yt-lyric-practice-spin 0.72s linear infinite;
+}
+
+@keyframes yt-lyric-practice-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes yt-lyric-practice-search-pulse {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 220% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yt-lyric-practice-panel .yt-lyric-practice-primary button.is-searching,
+  .yt-lyric-practice-spinner {
+    animation: none;
+  }
 }
 
 .yt-lyric-practice-panel .yt-lyric-practice-manual-toggle {

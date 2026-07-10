@@ -332,7 +332,11 @@
     if (markerCount) markerCount.textContent = `${markers.length}`;
     if (findSyncedButton) {
       findSyncedButton.disabled = findSyncedBusy;
-      findSyncedButton.textContent = findSyncedBusy ? "Searching LRCLIB…" : "Find synced lyrics";
+      findSyncedButton.classList.toggle("is-searching", findSyncedBusy);
+      findSyncedButton.setAttribute("aria-busy", String(findSyncedBusy));
+      findSyncedButton.innerHTML = findSyncedBusy
+        ? '<span class="yt-lyric-practice-spinner" aria-hidden="true"></span><span>Searching LRCLIB…</span>'
+        : "Find synced lyrics";
     }
     if (manualSection) manualSection.hidden = !manualEditorVisible;
     if (manualToggle) manualToggle.hidden = manualEditorVisible;
