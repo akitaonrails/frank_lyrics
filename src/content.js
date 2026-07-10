@@ -247,18 +247,24 @@
     const activeItem = markerList.querySelector(`[data-marker-index="${activeIndex}"]`);
     if (!activeItem) return;
 
-    const itemTop = activeItem.offsetTop;
-    const itemBottom = itemTop + activeItem.offsetHeight;
-    const visibleTop = markerList.scrollTop;
-    const visibleBottom = visibleTop + markerList.clientHeight;
-    const isVisible = itemTop >= visibleTop && itemBottom <= visibleBottom;
+    const listRect = markerList.getBoundingClientRect();
+    const itemRect = activeItem.getBoundingClientRect();
+    if (listRect.height <= 0 || itemRect.height <= 0) return;
+
+    const padding = 6;
+    const isVisible = itemRect.top >= listRect.top + padding
+      && itemRect.bottom <= listRect.bottom - padding;
 
     if (activeIndex === lastScrolledMarkerIndex && isVisible) return;
 
-    if (itemTop < visibleTop) {
-      markerList.scrollTop = Math.max(0, itemTop - 4);
-    } else if (itemBottom > visibleBottom) {
-      markerList.scrollTop = itemBottom - markerList.clientHeight + 4;
+    if (activeIndex !== lastScrolledMarkerIndex) {
+      const itemCenter = itemRect.top + itemRect.height / 2;
+      const listCenter = listRect.top + listRect.height / 2;
+      markerList.scrollTop += itemCenter - listCenter;
+    } else if (itemRect.top < listRect.top + padding) {
+      markerList.scrollTop -= (listRect.top + padding) - itemRect.top;
+    } else if (itemRect.bottom > listRect.bottom - padding) {
+      markerList.scrollTop += itemRect.bottom - (listRect.bottom - padding);
     }
 
     lastScrolledMarkerIndex = activeIndex;
