@@ -70,6 +70,56 @@
   margin-top: 6px;
 }
 
+.yt-lyric-practice-panel .yt-lyric-practice-icon-row button,
+.yt-lyric-practice-panel .yt-lyric-practice-speed-row button,
+.yt-lyric-practice-panel .yt-lyric-practice-nudge-row button {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.yt-lyric-practice-panel .yt-lyric-practice-icon-row button {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.yt-lyric-practice-speed-row {
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.yt-lyric-practice-panel .yt-lyric-practice-speed-row button {
+  min-height: 28px;
+  padding: 4px 5px;
+  border-radius: 7px;
+  color: #dedede;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.yt-lyric-practice-panel .yt-lyric-practice-nudge-row button {
+  gap: 6px;
+  min-height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.07));
+}
+
+.yt-lyric-practice-nudge-row span {
+  color: #ffb8b8;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.yt-lyric-practice-nudge-row small {
+  color: #eeeeee;
+  font-size: 10px;
+  font-weight: 750;
+}
+
 .yt-lyric-practice-primary {
   display: flex;
   margin-top: 8px;
@@ -98,7 +148,8 @@
 }
 
 .yt-lyric-practice-panel button[aria-pressed="true"] {
-  background: #1f7a4d;
+  background: linear-gradient(135deg, #1f7a4d, #24945c);
+  color: #fff;
 }
 
 .yt-lyric-practice-panel .yt-lyric-practice-primary button {

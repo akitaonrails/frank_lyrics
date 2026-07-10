@@ -29,11 +29,11 @@ No package manager or build step is required.
 - **Find synced lyrics**: primary action. The extension parses the YouTube title, asks the background worker to search LRCLIB, imports only synced timestamp markers, and saves them locally for the current YouTube video ID.
 - **Saved markers on reload**: locally saved markers in `chrome.storage.local` are preferred the next time that video page loads.
 - **Manual markers / fine-tune**: reveals the editor for adding, removing, nudging, or loading sample markers. It opens automatically when LRCLIB has no match.
-- **+ Marker** or **Alt+M**: add a local marker at the current playback time.
-- **−0.25s / +0.25s**: nudge all markers earlier or later to align imported timestamps with a specific upload.
+- **📍＋** or **Alt+M**: add a local marker at the current playback time.
+- **⇤ 0.25s / 0.25s ⇥**: nudge all markers earlier or later to align imported timestamps with a specific upload.
 - **Alt+ArrowLeft / Alt+ArrowRight**: jump to previous or next marker.
-- **Alt+R**: toggle repeat for the current segment.
-- **Rate**: toggle playback speed between `1.00x` and `0.75x`.
+- **↻** or **Alt+R**: toggle repeat for the current segment.
+- **Speed buttons**: choose `1x`, `0.9x`, `0.8x`, or `0.75x` practice speed.
 - **Marker list / mini timeline**: click marker times or ticks to seek; click **×** to remove a marker.
 - **Load sample**: secondary development fallback for packaged sample markers, currently documented in `data/sample-markers.json`.
 

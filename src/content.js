@@ -335,7 +335,7 @@
     const segment = currentSegment(video);
     const status = panel.querySelector(".yt-lyric-practice-status");
     const repeatButton = panel.querySelector("[data-action='repeat']");
-    const rateButton = panel.querySelector("[data-action='rate']");
+    const rateButtons = panel.querySelectorAll("[data-action='rate']");
     const markerList = panel.querySelector(".yt-lyric-practice-markers");
     const timeline = panel.querySelector(".yt-lyric-practice-timeline");
     const markerCount = panel.querySelector(".yt-lyric-practice-marker-count");
@@ -358,7 +358,11 @@
       sourceBadge.textContent = hasStoredMarkers && markers.length ? "Local saved" : "LRCLIB first";
     }
     if (repeatButton) repeatButton.setAttribute("aria-pressed", String(repeatEnabled));
-    if (rateButton) rateButton.textContent = `${video ? video.playbackRate.toFixed(2) : "1.00"}x`;
+    rateButtons.forEach((button) => {
+      const rate = Number(button.dataset.rate);
+      const isActive = video && Math.abs(video.playbackRate - rate) < 0.01;
+      button.setAttribute("aria-pressed", String(Boolean(isActive)));
+    });
 
     if (markerCount) markerCount.textContent = `${markers.length}`;
     if (findSyncedButton) {
@@ -412,18 +416,23 @@
       <button type="button" class="yt-lyric-practice-manual-toggle" data-action="manual">Manual markers / fine-tune</button>
       <div class="yt-lyric-practice-manual" hidden>
       <div class="yt-lyric-practice-manual-note">Edit only when synced lookup misses or timing needs a small shift.</div>
-      <div class="yt-lyric-practice-row">
-        <button type="button" data-action="prev">◀ Prev</button>
-        <button type="button" data-action="next">Next ▶</button>
+      <div class="yt-lyric-practice-row yt-lyric-practice-icon-row">
+        <button type="button" data-action="prev" aria-label="Previous marker" title="Jump to previous marker">◀</button>
+        <button type="button" data-action="next" aria-label="Next marker" title="Jump to next marker">▶</button>
       </div>
-      <div class="yt-lyric-practice-row">
-        <button type="button" data-action="repeat" aria-pressed="false">Repeat</button>
-        <button type="button" data-action="add">+ Marker</button>
-        <button type="button" data-action="rate">1.00x</button>
+      <div class="yt-lyric-practice-row yt-lyric-practice-icon-row">
+        <button type="button" data-action="repeat" aria-label="Repeat current segment" title="Repeat current segment (Alt+R)" aria-pressed="false">↻</button>
+        <button type="button" data-action="add" aria-label="Add marker" title="Add marker at current time (Alt+M)">📍＋</button>
       </div>
-      <div class="yt-lyric-practice-row">
-        <button type="button" data-action="nudge-back" title="Move all markers 0.25 seconds earlier">Earlier −0.25s</button>
-        <button type="button" data-action="nudge-forward" title="Move all markers 0.25 seconds later">Later +0.25s</button>
+      <div class="yt-lyric-practice-row yt-lyric-practice-speed-row" aria-label="Playback speed">
+        <button type="button" data-action="rate" data-rate="1" aria-label="Set speed to 1x" title="Normal speed" aria-pressed="false">1×</button>
+        <button type="button" data-action="rate" data-rate="0.9" aria-label="Set speed to 0.9x" title="Practice speed: 0.9x" aria-pressed="false">.9×</button>
+        <button type="button" data-action="rate" data-rate="0.8" aria-label="Set speed to 0.8x" title="Practice speed: 0.8x" aria-pressed="false">.8×</button>
+        <button type="button" data-action="rate" data-rate="0.75" aria-label="Set speed to 0.75x" title="Slow practice speed: 0.75x" aria-pressed="false">.75×</button>
+      </div>
+      <div class="yt-lyric-practice-row yt-lyric-practice-nudge-row">
+        <button type="button" data-action="nudge-back" aria-label="Nudge all markers 0.25 seconds earlier" title="Move all markers 0.25 seconds earlier"><span>⇤</span><small>0.25s</small></button>
+        <button type="button" data-action="nudge-forward" aria-label="Nudge all markers 0.25 seconds later" title="Move all markers 0.25 seconds later"><small>0.25s</small><span>⇥</span></button>
       </div>
       <div class="yt-lyric-practice-marker-head">
         <span>Markers <b class="yt-lyric-practice-marker-count">0</b></span>
@@ -452,9 +461,8 @@
       if (action === "seek") seekToMarker(index);
       if (action === "remove") void removeMarker(index);
       if (action === "rate") {
-        const video = getVideo();
-        const nextRate = video && video.playbackRate === 1 ? 0.75 : 1;
-        setPlaybackRate(nextRate);
+        const rate = Number(control.dataset.rate);
+        if (Number.isFinite(rate)) setPlaybackRate(rate);
       }
       if (action === "close") panel.remove();
     });
