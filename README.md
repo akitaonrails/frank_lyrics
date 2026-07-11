@@ -18,10 +18,11 @@ The compact panel shows saved markers, repeat controls, speed buttons, nudge con
 
 1. Download the latest `frank-lyrics-vX.Y.Z.zip` from GitHub Releases.
 2. Unzip it to a folder you can keep, for example `Frank Lyrics/`.
-3. Open `chrome://extensions` in Chrome.
-4. Enable **Developer mode**.
-5. Click **Load unpacked** and select the unzipped folder.
-6. Open a YouTube watch page.
+3. Open a terminal in directory `Frank Lyrics/` and execute in terminal "npm install"; after installed close the terminal.
+4. Open `chrome://extensions` in Chrome.
+5. Enable **Developer mode**.
+6. Click **Load unpacked** and select the unzipped folder.
+7. Open a YouTube watch page.
 
 Chrome cannot directly install an arbitrary extension zip outside the Chrome Web Store. For now, the release zip must be unpacked and loaded with Developer mode.
 
