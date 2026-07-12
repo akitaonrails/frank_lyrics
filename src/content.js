@@ -4,6 +4,8 @@
   const PANEL_ID = "yt-lyric-practice-panel";
   const SAMPLE_URL = chrome.runtime.getURL("data/sample-markers.json");
   const SKIP_EPSILON = 0.15;
+  const PANEL_MODE_FULL = "full";
+  const PANEL_MODE_LAUNCHER = "launcher";
 
   let videoId = null;
   let markers = [];
@@ -15,6 +17,11 @@
   let hasStoredMarkers = false;
   let manualEditorVisible = false;
   let lastScrolledMarkerIndex = -2;
+  let lookupGeneration = 0;
+  let panelMode = PANEL_MODE_FULL;
+  let defaultFullPanel = true;
+  let userExpandedPanel = false;
+  let closeToLauncher = false;
 
   function getVideoId() {
     return new URLSearchParams(window.location.search).get("v");
@@ -84,6 +91,7 @@
   }
 
   function revealManualEditor(message) {
+    expandPanelForUser();
     manualEditorVisible = true;
     lastScrolledMarkerIndex = -2;
     updatePanel();
@@ -102,6 +110,59 @@
       || "";
   }
 
+  function isLyricsRelatedVideo(rawTitle) {
+    const title = String(rawTitle || "").toLowerCase();
+    const lyricSignals = /\b(?:lyrics?|lyric\s+video|lirik|karaoke|sing\s*along|romaji|kanji|color\s*coded|paroles|letra)\b/iu;
+    const compactSubtitleSignals = /\b(?:kan\s*\/\s*rom\s*\/\s*eng|kan\s*rom\s*eng|kan\s*\/\s*rom|rom\s*\/\s*eng)\b/iu;
+    return lyricSignals.test(title)
+      || compactSubtitleSignals.test(title);
+  }
+
+  function shouldShowFullPanelByDefault(rawTitle) {
+    return hasStoredMarkers || markers.length > 0 || isLyricsRelatedVideo(rawTitle);
+  }
+
+  function buildLookupContext(rawTitle, rawDescription, parsed) {
+    const metadataLines = String(rawDescription || "")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => /^(?:anime|song|music|title|track|artist|singer|performed\s+by|music\s+by)\s*[:：]/i.test(line))
+      .slice(0, 5);
+
+    return [
+      rawTitle,
+      parsed.track ? `track: ${parsed.track}` : "",
+      parsed.artist ? `artist: ${parsed.artist}` : "",
+      ...metadataLines
+    ].filter(Boolean).join("\n").slice(0, 500);
+  }
+
+  function resetForNonWatchPage() {
+    lookupGeneration += 1;
+    if (repeatTimer) {
+      window.clearInterval(repeatTimer);
+      repeatTimer = null;
+    }
+    document.getElementById(PANEL_ID)?.remove();
+    videoId = null;
+    markers = [];
+    repeatEnabled = false;
+    findSyncedBusy = false;
+    panel = null;
+    panelMode = PANEL_MODE_LAUNCHER;
+    defaultFullPanel = false;
+    userExpandedPanel = false;
+    closeToLauncher = false;
+    hasStoredMarkers = false;
+    manualEditorVisible = false;
+    lastScrolledMarkerIndex = -2;
+  }
+
+  function expandPanelForUser() {
+    userExpandedPanel = true;
+    if (!panel || panelMode === PANEL_MODE_LAUNCHER) buildPanel(PANEL_MODE_FULL);
+  }
+
   async function findSyncedMarkers() {
     if (findSyncedBusy) return;
     const video = getVideo();
@@ -109,12 +170,15 @@
       showToast("Open a YouTube watch page first");
       return;
     }
+    const requestVideoId = videoId;
+    const requestGeneration = lookupGeneration;
 
     const rawTitle = getYouTubeTitle();
     const rawDescription = getYouTubeDescription();
     const parsed = FrankLyricsMetadata.parseVideoMetadata(rawTitle, rawDescription);
     if (!parsed.track) {
       manualEditorVisible = true;
+      expandPanelForUser();
       updatePanel();
       showToast("Could not parse track from title/description");
       return;
@@ -124,15 +188,20 @@
     updatePanel();
     showToast(`Searching LRCLIB for ${parsed.track}…`);
 
+    function isCurrentLookup() {
+      return videoId === requestVideoId && lookupGeneration === requestGeneration;
+    }
+
     try {
       const response = await chrome.runtime.sendMessage({
         type: "findSyncedMarkers",
-        videoId,
         track: parsed.track,
         artist: parsed.artist,
         duration: Number.isFinite(video.duration) ? video.duration : null,
-        context: `${rawTitle}\n${rawDescription}`
+        context: buildLookupContext(rawTitle, rawDescription, parsed)
       });
+
+      if (!isCurrentLookup()) return;
 
       if (!response?.ok || !Array.isArray(response.markers) || response.markers.length === 0) {
         manualEditorVisible = true;
@@ -149,12 +218,15 @@
       const source = response.source?.artistName ? ` from LRCLIB (${response.source.artistName})` : " from LRCLIB";
       showToast(`Loaded ${markers.length} synced markers${source}`);
     } catch (error) {
+      if (!isCurrentLookup()) return;
       console.warn("Lyric practice: synced marker import failed", error);
       manualEditorVisible = true;
       showToast("LRCLIB lookup failed; existing markers kept");
     } finally {
-      findSyncedBusy = false;
-      updatePanel();
+      if (isCurrentLookup()) {
+        findSyncedBusy = false;
+        updatePanel();
+      }
     }
   }
 
@@ -231,6 +303,7 @@
   async function addMarker() {
     const video = getVideo();
     if (!video) return;
+    expandPanelForUser();
     manualEditorVisible = true;
     const markerTime = Math.round(video.currentTime * 100) / 100;
     markers = normalizeMarkers([...markers, video.currentTime]);
@@ -302,6 +375,7 @@
 
   function updatePanel() {
     if (!panel) return;
+    if (panelMode === PANEL_MODE_LAUNCHER) return;
     const video = getVideo();
     const segment = currentSegment(video);
     const status = panel.querySelector(".yt-lyric-practice-status");
@@ -382,13 +456,25 @@
     }
   }
 
-  function buildPanel() {
+  function buildPanel(mode = PANEL_MODE_FULL) {
     const existing = document.getElementById(PANEL_ID);
     if (existing) existing.remove();
 
+    panelMode = mode;
     panel = document.createElement("section");
     panel.id = PANEL_ID;
-    panel.className = "yt-lyric-practice-panel";
+    panel.className = panelMode === PANEL_MODE_LAUNCHER
+      ? "yt-lyric-practice-panel yt-lyric-practice-launcher"
+      : "yt-lyric-practice-panel";
+
+    if (panelMode === PANEL_MODE_LAUNCHER) {
+      panel.innerHTML = `
+        <button type="button" class="yt-lyric-practice-launcher-button" data-action="open-panel" title="Open lyric practice controls" aria-label="Open lyric practice controls">
+          <span aria-hidden="true">♪</span>
+          <span>Lyric Practice</span>
+        </button>
+      `;
+    } else {
     panel.innerHTML = `
       <div class="yt-lyric-practice-title">
         <span>Lyric Practice</span>
@@ -430,12 +516,17 @@
       <div class="yt-lyric-practice-help">Alt+←/→ jump · Alt+R repeat · Alt+M marker</div>
       </div>
     `;
+    }
 
     panel.addEventListener("click", (event) => {
       const control = event.target.closest("[data-action]");
       if (!control || !panel.contains(control)) return;
       const action = control.dataset.action;
       const index = Number(control.dataset.index);
+      if (action === "open-panel") {
+        expandPanelForUser();
+        return;
+      }
       if (action === "prev") jumpToMarker(-1);
       if (action === "next") jumpToMarker(1);
       if (action === "repeat") toggleRepeat();
@@ -451,7 +542,15 @@
         const rate = Number(control.dataset.rate);
         if (Number.isFinite(rate)) setPlaybackRate(rate);
       }
-      if (action === "close") panel.remove();
+      if (action === "close") {
+        if (!closeToLauncher && defaultFullPanel) {
+          panel.remove();
+          panel = null;
+        } else {
+          userExpandedPanel = false;
+          buildPanel(PANEL_MODE_LAUNCHER);
+        }
+      }
     });
 
     document.documentElement.appendChild(panel);
@@ -478,17 +577,38 @@
   }
 
   async function initForPage() {
+    lookupGeneration += 1;
+    const pageGeneration = lookupGeneration;
     const nextVideoId = getVideoId();
-    if (!nextVideoId) return;
+    if (!nextVideoId) {
+      resetForNonWatchPage();
+      return;
+    }
+    findSyncedBusy = false;
+    userExpandedPanel = false;
     videoId = nextVideoId;
     const loaded = await loadMarkers(videoId);
+    if (lookupGeneration !== pageGeneration || videoId !== nextVideoId) return;
     markers = loaded.markers;
     hasStoredMarkers = loaded.fromStorage;
     manualEditorVisible = hasStoredMarkers;
     lastScrolledMarkerIndex = -2;
-    buildPanel();
+    defaultFullPanel = shouldShowFullPanelByDefault(getYouTubeTitle());
+    closeToLauncher = !defaultFullPanel;
+    buildPanel(defaultFullPanel ? PANEL_MODE_FULL : PANEL_MODE_LAUNCHER);
+    window.setTimeout(() => syncDefaultPanelMode(pageGeneration, nextVideoId), 1200);
     updateRepeatLoop();
     if (hasStoredMarkers) showToast(`Loaded ${markers.length} local markers`);
+  }
+
+  function syncDefaultPanelMode(pageGeneration, expectedVideoId) {
+    if (lookupGeneration !== pageGeneration || videoId !== expectedVideoId) return;
+    const nextDefaultFullPanel = shouldShowFullPanelByDefault(getYouTubeTitle());
+    if (nextDefaultFullPanel === defaultFullPanel) return;
+    if (userExpandedPanel || findSyncedBusy) return;
+    defaultFullPanel = nextDefaultFullPanel;
+    closeToLauncher = !defaultFullPanel;
+    buildPanel(defaultFullPanel ? PANEL_MODE_FULL : PANEL_MODE_LAUNCHER);
   }
 
   let lastUrl = location.href;

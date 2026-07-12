@@ -36,6 +36,7 @@ No package manager or build step is required.
 
 ## How to use
 
+- **Auto-display**: lyric-looking videos open the full practice panel automatically. Regular watch pages stay collapsed to a small floating **Lyric Practice** button until you open it.
 - **Find synced lyrics**: primary action. The extension parses the YouTube title, asks the background worker to search LRCLIB, imports only synced timestamp markers, and saves them locally for the current YouTube video ID.
 - **Saved markers on reload**: locally saved markers in `chrome.storage.local` are preferred the next time that video page loads.
 - **Manual markers / fine-tune**: reveals the editor for adding, removing, nudging, or loading sample markers. It opens automatically when LRCLIB has no match.
@@ -51,9 +52,9 @@ All marker changes are saved to Chrome extension local storage for the specific 
 
 ## Privacy and copyright
 
-For LRCLIB lookup, the content script derives and sends `{ track, artist, duration }` to the extension background service worker, which queries `https://lrclib.net/`. The video ID is used only for local marker storage.
+For LRCLIB lookup, the content script derives `{ track, artist, duration }` plus a short filtered/truncated lookup context from the YouTube title and metadata-like description lines such as `Song:`, `Artist:`, `Title:`, or `Anime:`. The extension background service worker uses that context to query `https://lrclib.net/`, especially when the artist is missing from the title. The YouTube video ID is used only for local marker storage and is not sent to LRCLIB.
 
-LRCLIB synced lyric text is used only to parse timestamps. The background worker discards lyric text and returns marker seconds plus source metadata. The extension stores only timestamp markers locally in `chrome.storage.local` per YouTube video ID; it does not store or display lyric text.
+LRCLIB synced lyric text is used only to parse timestamps. The background worker strips lyric text before caching lookup candidates and returns marker seconds plus source metadata. The extension stores only timestamp markers locally in `chrome.storage.local` per YouTube video ID; it does not store or display lyric text.
 
 ## Current limitations
 
@@ -93,8 +94,8 @@ The script reads `manifest.json`, validates manifest/data JSON, and writes `dist
 GitHub Actions validates JavaScript/JSON and uploads a packaged artifact on pushes and pull requests. To publish a GitHub Release artifact, push a version tag matching the manifest version, for example:
 
 ```sh
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.2
+git push origin v0.1.2
 ```
 
 You can also run the workflow manually with `release=true`.

@@ -21,8 +21,16 @@
   }
 
   function isNoiseTitleTag(value) {
+    if (/\b(?:lyrics?|vietsub|sub|eng|kan|rom|romaji|karaoke|translation|color\s*coded)\b/i.test(String(value || ""))) {
+      return true;
+    }
     return /^(?:hd|4k|mv|pv|official|lyrics?|lyric video|full|audio|music video|op|ed|opening|ending)$/i
       .test(cleanTitlePart(value));
+  }
+
+  function isEmptyOrNoiseTrackPart(value) {
+    const cleaned = cleanTitlePart(value).replace(/[+|/._-]+/g, "").trim();
+    return !cleaned || isNoiseTitleTag(value);
   }
 
   function parseSongValue(value) {
@@ -87,7 +95,7 @@
     }
 
     const artistQuotedTrackMatch = title.match(/^(.+?)\s*["“”「『]([^"“”」』]+)["“”」』]/u);
-    if (artistQuotedTrackMatch && !looksLikeAnimeContext(artistQuotedTrackMatch[1])) {
+    if (artistQuotedTrackMatch && !artistQuotedTrackMatch[1].includes(" - ") && !looksLikeAnimeContext(artistQuotedTrackMatch[1])) {
       const artist = cleanTitlePart(artistQuotedTrackMatch[1]);
       const track = cleanTitlePart(artistQuotedTrackMatch[2]);
       if (track && artist) return { track, artist: applyArtistAlias(artist), originalArtist: artist };
@@ -107,7 +115,7 @@
       if (track && artist && !looksLikeAnimeContext(artist)) return { track, artist: applyArtistAlias(artist), originalArtist: artist };
     }
 
-    const deMatch = title.match(/^(.+?)\s+de\s+(.+?)(?:\s+-|$)/i);
+    const deMatch = title.match(/^(.+?)\s+de\s+(.+?)\s+-/i);
     if (deMatch) {
       const track = cleanTitlePart(deMatch[1]);
       const artist = cleanTitlePart(deMatch[2]);
@@ -118,6 +126,23 @@
     if (colonArtistTrackMatch) {
       const artist = cleanTitlePart(colonArtistTrackMatch[1]);
       const track = cleanTitlePart(colonArtistTrackMatch[2]);
+      if (track && artist) return { track, artist: applyArtistAlias(artist), originalArtist: artist };
+    }
+
+    const uppercaseTrackArtistMatch = title.match(/^([A-Z0-9'’\s]+?)\s+-\s+([^「『([]+?)\s*([「『(\[])([^」』)\]]*)/u);
+    if (uppercaseTrackArtistMatch && !title.includes("|") && looksLikeAnimeContext(uppercaseTrackArtistMatch[4])) {
+      const track = cleanTitlePart(uppercaseTrackArtistMatch[1]);
+      const artist = cleanTitlePart(uppercaseTrackArtistMatch[2]);
+      if (track && artist) return { track, artist: applyArtistAlias(artist), originalArtist: artist };
+    }
+
+    const artistDashTrackMatch = title.match(/^(.+?)\s+-\s+([^-[\]()]+?)\s*(?:\(|\[|$)/);
+    if (artistDashTrackMatch
+      && !title.includes("|")
+      && !looksLikeAnimeContext(artistDashTrackMatch[1])
+      && !isEmptyOrNoiseTrackPart(artistDashTrackMatch[2])) {
+      const artist = cleanTitlePart(artistDashTrackMatch[1]);
+      const track = cleanTitlePart(artistDashTrackMatch[2]);
       if (track && artist) return { track, artist: applyArtistAlias(artist), originalArtist: artist };
     }
 
@@ -170,7 +195,10 @@
       if (parts.length >= 2) {
         const rightSide = parts.slice(1).join(" - ");
         const rightArtistMatch = rightSide.match(/^([^「『]+?)\s*[「『]/u);
-        if (rightArtistMatch && !looksLikeAnimeContext(parts[0])) {
+        if (isEmptyOrNoiseTrackPart(rightSide)) {
+          track = parts[0];
+          artist = "";
+        } else if (rightArtistMatch && !looksLikeAnimeContext(parts[0])) {
           track = parts[0];
           artist = rightArtistMatch[1];
         } else if (/^[A-Z0-9'’\s]+$/.test(parts[0]) && /lyrics?|\(|\[/.test(rightSide)) {

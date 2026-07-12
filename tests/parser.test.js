@@ -90,6 +90,24 @@ const cases = [
     expected: { track: "THE DAY", artist: "Porno Graffiti" }
   },
   {
+    name: "THE DAY bracketed anime context",
+    title: "THE DAY - Porno Graffiti 『The Hero Academia』OP S1",
+    description: "",
+    expected: { track: "THE DAY", artist: "Porno Graffiti" }
+  },
+  {
+    name: "BONNIE PINK normal artist dash track",
+    title: "BONNIE PINK - It's Gonna Rain (Romaji/English)",
+    description: "",
+    expected: { track: "It's Gonna Rain", artist: "BONNIE PINK" }
+  },
+  {
+    name: "QUEEN normal artist dash track",
+    title: "QUEEN - Bohemian Rhapsody",
+    description: "",
+    expected: { track: "Bohemian Rhapsody", artist: "QUEEN" }
+  },
+  {
     name: "Maaya Sakamoto Kiseki No Umi",
     title: "Maaya Sakamoto / Kiseki No Umi English Translation",
     description: "",
@@ -100,6 +118,30 @@ const cases = [
     title: 'Magic Knight Rayearth Opening FULL "Yuzurenai Negai" by Naomi Tamura (Lyrics)',
     description: "",
     expected: { track: "Yuzurenai Negai", artist: "Naomi Tamura" }
+  },
+  {
+    name: "Clamp in Wonderland track-only",
+    title: "Clamp in Wonderland  - Music Video + Lyrics",
+    description: "",
+    expected: { track: "Clamp in Wonderland", artist: "" }
+  },
+  {
+    name: "Trust You Forever singer from description",
+    title: "[Vietsub + Lyrics] Trust You Forever | Yoshifumi Ushima | Mobile Fighter G Gundam Opening 2",
+    description: "Trans + Edit: Vino\nSinger: Yoshifumi Ushima",
+    expected: { track: "Trust You Forever", artist: "Yoshifumi Ushima" }
+  },
+  {
+    name: "Curio description metadata",
+    title: "Curio - Kimi Ni Fureru Dake De (Rorouni Kenshin 3rd Opening) [Romaji]",
+    description: "ARTIST:CURIO\nSONG:KIMI NI FURERU DAKE DE",
+    expected: { track: "KIMI NI FURERU DAKE DE", artist: "CURIO" }
+  },
+  {
+    name: "Gundam 08th title artist track",
+    title: "Gundam 08th MS Team: YONEKURA CHIHIRO 米倉千尋- 嵐の中で輝いて Arashi no Naka de Kagayaite (Lyrics Kan/Rom/Eng)",
+    description: "",
+    expected: { track: "嵐の中で輝いて Arashi no Naka de Kagayaite", artist: "YONEKURA CHIHIRO 米倉千尋" }
   }
 ];
 

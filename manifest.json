@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Lyric Practice Prototype",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Small YouTube watch-page control panel for lyric practice with local markers.",
   "permissions": ["storage"],
   "host_permissions": ["https://lrclib.net/*"],

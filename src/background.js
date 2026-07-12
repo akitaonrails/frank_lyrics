@@ -1,6 +1,11 @@
 "use strict";
 
 const LRCLIB_SEARCH_URL = "https://lrclib.net/api/search";
+const LRCLIB_TIMEOUT_MS = 12000;
+const CACHE_TTL_MS = 10 * 60 * 1000;
+const CACHE_LIMIT = 40;
+const searchCache = new Map();
+const markerCache = new Map();
 
 function normalizeText(value) {
   return String(value || "")
@@ -47,10 +52,88 @@ function parseLrcTimestamps(syncedLyrics) {
   return Array.from(new Set(seconds)).sort((a, b) => a - b);
 }
 
-function rankCandidate(candidate, request) {
-  if (!candidate?.syncedLyrics) return null;
+function getCache(cache, key) {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.value;
+}
 
-  const markers = parseLrcTimestamps(candidate.syncedLyrics);
+function setCache(cache, key, value, ttlMs = CACHE_TTL_MS) {
+  if (cache.size >= CACHE_LIMIT && !cache.has(key)) {
+    cache.delete(cache.keys().next().value);
+  }
+  cache.set(key, { value, expiresAt: Date.now() + ttlMs });
+}
+
+function stripCandidate(candidate) {
+  const markers = parseLrcTimestamps(candidate?.syncedLyrics);
+  if (markers.length < 2) return null;
+  return {
+    id: candidate.id,
+    name: candidate.name,
+    trackName: candidate.trackName,
+    artistName: candidate.artistName,
+    albumName: candidate.albumName,
+    duration: candidate.duration,
+    markers
+  };
+}
+
+function cacheKeyForRequest(request) {
+  const duration = Number.isFinite(Number(request.duration)) ? Math.round(Number(request.duration)) : "";
+  return [
+    normalizeText(request.track),
+    normalizeText(request.artist),
+    duration,
+    normalizeText(request.context).slice(0, 160)
+  ].join("|");
+}
+
+async function fetchJsonWithTimeout(url, timeoutMs = LRCLIB_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      headers: { "Accept": "application/json" },
+      signal: controller.signal
+    });
+    if (!response.ok) {
+      throw new Error(`LRCLIB search failed (${response.status})`);
+    }
+    return response.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function searchLrclib(params) {
+  const key = params.toString();
+  const cached = getCache(searchCache, key);
+  if (cached) return cached;
+
+  const promise = fetchJsonWithTimeout(`${LRCLIB_SEARCH_URL}?${key}`)
+    .then((results) => ({
+      ok: true,
+      results: (Array.isArray(results) ? results : []).map(stripCandidate).filter(Boolean)
+    }))
+    .catch((error) => {
+      console.warn("Lyric practice: LRCLIB search variant failed", key, error);
+      return { ok: false, results: [] };
+    });
+  setCache(searchCache, key, promise);
+
+  const result = await promise;
+  if (result.ok) setCache(searchCache, key, result);
+  else searchCache.delete(key);
+  return result;
+}
+
+function rankCandidate(candidate, request) {
+  const markers = candidate?.markers || [];
   if (markers.length < 2) return null;
 
   const trackScore = textMatchScore(request.track, candidate.trackName || candidate.name);
@@ -85,6 +168,10 @@ async function findSyncedMarkers(request) {
     return { ok: false, message: "Could not parse song title" };
   }
 
+  const requestCacheKey = cacheKeyForRequest(request);
+  const cached = getCache(markerCache, requestCacheKey);
+  if (cached) return cached;
+
   const searches = [];
   if (request.artist) {
     searches.push(new URLSearchParams({ track_name: request.track, artist_name: request.artist }));
@@ -94,17 +181,15 @@ async function findSyncedMarkers(request) {
   searches.push(new URLSearchParams({ track_name: request.track }));
 
   const resultsById = new Map();
-  for (const params of searches) {
-    const response = await fetch(`${LRCLIB_SEARCH_URL}?${params.toString()}`, {
-    headers: { "Accept": "application/json" }
-    });
+  const searchResults = await Promise.all(searches.map((params) => searchLrclib(params)));
+  const allSearchesSucceeded = searchResults.every((result) => result.ok);
+  const successfulSearches = searchResults.filter((result) => result.ok);
+  if (!successfulSearches.length) {
+    return { ok: false, message: "LRCLIB lookup failed; try again" };
+  }
 
-    if (!response.ok) {
-      throw new Error(`LRCLIB search failed (${response.status})`);
-    }
-
-    const results = await response.json();
-    for (const result of Array.isArray(results) ? results : []) {
+  for (const { results } of successfulSearches) {
+    for (const result of results) {
       resultsById.set(result.id ?? `${result.trackName}-${result.artistName}-${result.duration}`, result);
     }
   }
@@ -115,11 +200,16 @@ async function findSyncedMarkers(request) {
     .sort((a, b) => b.score - a.score);
 
   if (!ranked.length) {
-    return { ok: false, message: "No synced LRCLIB match found" };
+    if (!allSearchesSucceeded) {
+      return { ok: false, message: "LRCLIB lookup partially failed; try again" };
+    }
+    const miss = { ok: false, message: "No synced LRCLIB match found" };
+    setCache(markerCache, requestCacheKey, miss);
+    return miss;
   }
 
   const best = ranked[0];
-  return {
+  const response = {
     ok: true,
     markers: best.markers,
     source: {
@@ -132,6 +222,8 @@ async function findSyncedMarkers(request) {
       durationDiff: Math.round(best.durationDiff * 100) / 100
     }
   };
+  setCache(markerCache, requestCacheKey, response);
+  return response;
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
